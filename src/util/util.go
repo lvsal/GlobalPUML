@@ -1,14 +1,16 @@
 package util
 
 import (
+	"bytes"
 	"os"
 	"fmt"
 	"strings"
 	//"unicode"
 	"regexp"
+	"encoding/json"
 )
 
-var Debug bool
+var Debug, Global bool
 
 func PrintErr(err error) {
 	fmt.Fprintf(os.Stderr, err.Error() + "\n")
@@ -41,4 +43,15 @@ func StripComment(source string) string {
 func ReplaceAll(s, old, new string) string {
 	n := strings.Count(s, old)
 	return strings.Replace(s, old, new, n)
+}
+
+func Dump(v interface{}) ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "    ")
+	if err := encoder.Encode(v); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
 }

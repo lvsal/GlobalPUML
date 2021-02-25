@@ -2,7 +2,6 @@ package puml
 
 import (
 	"../parser"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"regexp"
@@ -62,6 +61,7 @@ func RelationshipsSet() parser.Set {
 			var arrow string
 			if k, exists := Relationships[r]; exists {
 				if _, exists2 := k[class]; exists2 {
+					delete(k, class)
 					arrow = " --- "
 					found = true
 				}
@@ -113,21 +113,23 @@ func parseToPUML(parse *parser.Parse) (*PlantUML, error) {
 					if len(split) != 2 {
 						return nil, fmt.Errorf("Failed to get package for %s", k)
 					}
-					if pkg.Name == split[0] && (strings.Contains(k, "Global") || strings.Contains(c.Name, "Global")) {
-						continue
-					}
 
+					if !util.Global {
+						if pkg.Name == split[0] && (strings.Contains(k, "Global") || strings.Contains(c.Name, "Global")) {
+							continue
+						}
+					}
+					
 					_, exists2 := parse.TypeMap[k]
 					if exists2 {
 						if k != pkg.Name + "." + t.Name {
 							c.Relationships[k] = struct{}{}
 						}
 					} else {						
-						if _, exists := parse.Packages[split[0]]; exists && split[0] != pkg.Name {
-							if util.Debug {
-								fmt.Println(c.Name, "-", k)
+						if _, exists := parse.Packages[split[0]]; exists {
+							if util.Global && split[0] != pkg.Name {
+								c.Relationships[split[0] + "." + strings.Title(split[0]) + "Global"] = struct{}{}
 							}
-							c.Relationships[split[0] + "." + strings.Title(split[0]) + "Global"] = struct{}{}
 						}
 					}
 				}
@@ -287,20 +289,11 @@ func GeneratePUML(parse *parser.Parse) error {
 	if !util.Debug {
 		fmt.Println(puml)
 	} else {
-		data, err := json.MarshalIndent(s, "", "    ")
+		data, err := util.Dump(s)
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(data))
+		fmt.Println("Relationships:", string(data))
 	}
-	return nil
-}
-
-func (uml *PlantUML) Dump() error {
-	data, err := json.MarshalIndent(uml, "", "    ")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(data))
 	return nil
 }

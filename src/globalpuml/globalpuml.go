@@ -20,12 +20,16 @@ func eoe(err error) {
 
 func main() {
 	if len(os.Args) < 2 {
-		eoe(errors.New("Usage: globalpuml (root source directory) [-d]"))
+		eoe(errors.New("Usage: globalpuml (root source directory) [-d | -g]"))
 	}
 
 	if len(os.Args) == 3 {
-		if os.Args[2] == "-d" {
+		switch os.Args[2] {
+		case "-d":
 			util.Debug = true
+			util.Global = true
+		case "-g":
+			util.Global = true
 		}
 	}
 

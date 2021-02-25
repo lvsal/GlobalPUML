@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"fmt"
@@ -24,7 +23,7 @@ func (s Set) MarshalJSON() ([]byte, error) {
 	for k, _ := range s {
 		a = append(a, k)
 	}
-	return json.Marshal(a)
+	return util.Dump(a)
 }
 
 type Type struct {
@@ -79,9 +78,11 @@ func Parser(sources []string) (*Parse, error) {
 	p.PackageStructs()
 
 	if util.Debug {
-		if err := p.Dump(); err != nil {
+		data, err := util.Dump(p)
+		if err != nil {
 			return nil, err
 		}
+		fmt.Println(string(data))
 	}
 	return p, nil
 }
@@ -415,7 +416,6 @@ func (f *File) Global(lines []string) error {
 	re = regexp.MustCompile(CONST_VAR_MULTI_REGEX)
 	re2 = regexp.MustCompile("\\s")
 	for i := 0; i < len(variables); {
-
 		line := variables[i]
 		if !re.Match([]byte(line + "\n")) {
 			noMulti = append(noMulti, line)
@@ -514,40 +514,7 @@ func (f *File) Global(lines []string) error {
 				}
 			}
 			
-		} /*else {
-			re5 := regexp.MustCompile("\\s")
-			split := re5.Split(nLine, 2)
-			if len(split) < 2 {
-				return fmt.Errorf("Failed to parse variable: %s", line)
-			}
-
-			variables[split[0]] = ""
-		} 
-		*/
-		/*else if strings.Contains(nLine, "=") {
-			//fmt.Println("=:", nLine)
-			re3 := regexp.MustCompile("\\s?=\\s?")
-			split := re3.Split(nLine, 3)
-			if len(split) < 2 {
-				return fmt.Errorf("Failed to parse variable: %s", line)
-			}
-			cType := split[1]
-			if split[1] == "=" {
-				cType = ""
-			}
-			variables[split[0]] = cType
-		} else if re4.Match([]byte(line)) {
-			//fmt.Println("re4:", line)
-			re3 := regexp.MustCompile("\\s+")
-			split := re3.Split(nLine, 2)
-			if len(split) < 2 {
-				return fmt.Errorf("Failed to parse variable: %s", line)
-			}
-			variables[split[0]] = "struct{}"
-		} else {
-			//fmt.Println("else:", line)
-		}*/
-		//fmt.Println(variables)
+		}
 
 		for k, v := range variables {
 			if len(k) < 1 {
@@ -583,7 +550,7 @@ func (f *File) Uses(line string) []string {
 	}
 
 	for k, v := range f.Package.TypeSet {
-		re := regexp.MustCompile("(\\s|\\(|,)" + k + "(\\s|\\(|,|)")
+		re := regexp.MustCompile("(\\s|\\(|,|\\*)" + k + "(\\s|\\(|,|)")
 		if re.Match([]byte(line)) && v != f.Name {
 			uses = append(uses, f.Package.Name + "." + v)
 		}
@@ -603,13 +570,4 @@ func (p *Parse) PackageStructs() {
 			}
 		}
 	}
-}
-
-func (p *Parse) Dump() error {
-	data, err := json.MarshalIndent(p, "", "    ")
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(data))
-	return nil
 }
