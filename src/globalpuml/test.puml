@@ -1,0 +1,200 @@
+@startuml
+namespace util {
+	class util.UtilGlobal << (G,Green) >> {
+		+ NetLogger *log.Logger
+		+ UNKNOWN_FUNC 
+		+ Logger *log.Logger
+	
+		+ Caller(stack int) string
+		+ Log(log *log.Logger, v ...interface{})
+		+ Date(t time.Time) string
+	}
+	
+}
+
+namespace collection {
+	class collection.Collection << (T, #FF7700) >> {
+		- peers map[string]time.Time
+		- shutdown chanstruct{}
+		- lamport int
+		- code []byte
+		- sources []Source
+		- snippets []Snippet
+		- location string
+		- sentPeers []PeerUDP
+		- peersUDP []PeerUDP
+	
+	
+		- dumpCollection()
+		- updateLamport(timestamp int)
+		- incrementLamport()
+	
+		+ Sources() []Source
+		+ Shutdown() chan struct{}
+		+ Code() ([]byte, error)
+		+ AddSnippet(snippet Snippet)
+		+ Snippets() []Snippet
+		+ AddPeerUDP(sourceAddr, peerAddr string)
+		+ PeersUDP() []PeerUDP
+		+ AddPeer(peer string, t time.Time)
+		+ ActivePeers(timeout int) []string
+		+ Location() string
+		+ AddPeers(peers []string, t time.Time)
+		+ AddSource(addr string, peers []string)
+		+ AddSentPeer(peerUDP PeerUDP)
+		+ SentPeers() []PeerUDP
+		+ Peers() map[string]time.Time
+		+ CreateSnippet(content string) Snippet
+		+ Lamport() int
+		+ UpdatePeerTime(peer string, t time.Time)
+		+ SetShutdown()
+		+ SetLocation(address string)
+	}
+	class collection.CollectionGlobal << (G,Green) >> {
+		+ TEAM_NAME 
+		+ EXTENSION 
+	
+		+ Init() *Collection
+	}
+	class collection.PeerUDP << (S,Aquamarine) >> {
+		+ SourceAddress string
+		+ PeerAddress string
+		+ Date string
+	}
+	class collection.Dump << (S,Aquamarine) >> {
+		+ Peers map[string]time.Time
+		+ Sources []Source
+		+ PeersUDP []PeerUDP
+		+ SentPeers []PeerUDP
+		+ Snippets []Snippet
+		+ Lamport int
+		+ Location string
+	}
+	class collection.Snippet << (S,Aquamarine) >> {
+		+ SourceAddress string
+		+ Timestamp int
+		+ Content string
+		+ Date string
+	}
+	class collection.Source << (S,Aquamarine) >> {
+		+ Peers []string
+		+ Address string
+		+ Date string
+	}
+	
+}
+
+namespace peers {
+	class peers.PeersGlobal << (G,Green) >> {
+		- peerMux sync.Mutex
+		- snipMux sync.Mutex
+	
+		+ SNIPPET_SHUTDOWN_MSG 
+		+ SNIP_REQUEST 
+		+ REQUEST_LENGTH 
+		+ PeerRoutines 
+		+ REFRESH_RATE time.Duration
+		+ STOP_REQUEST 
+		+ PEER_REQUEST 
+		+ SEND_INTERVAL time.Duration
+		+ PEER_TIMEOUT 
+		+ OPTIONS 
+	
+		+ PeersHandlerRoutine(c *comms.UDPCommunication, wg *sync.WaitGroup, shutdown chan struct{})
+		+ PeerRoutinesManager(c *comms.UDPCommunication)
+		+ InputChannel(scanner *bufio.Scanner, input chan struct{})
+		+ SendSnippetRoutine(c *comms.UDPCommunication, wg *sync.WaitGroup, snippet collection.Snippet)
+		+ SnippetUIRoutine(c *comms.UDPCommunication, wg *sync.WaitGroup, shutdown chan struct{})
+		+ StopHandler(p *comms.Packet)
+		+ SnipHandler(p *comms.Packet)
+		+ PeerHandler(p *comms.Packet)
+		+ SendPeersRoutine(c *comms.UDPCommunication, wg *sync.WaitGroup, shutdown chan struct{})
+		+ Clear()
+		+ SnippetDisplayRoutine(cont chan struct{}, stop chan struct{})
+	}
+	peers.PeersGlobal --> comms.UDPCommunication
+	peers.PeersGlobal --> collection.Snippet
+	peers.PeersGlobal --> comms.Packet
+	class peers.PeersHandler << (T, #FF7700) >> {
+	}
+	class "<font color=blue>func</font>(*comms.Packet) " as peers.funccommsPacket {
+	}
+	"peers.funccommsPacket" #.. "PeersHandler"
+	class peers.PeerRoutine << (T, #FF7700) >> {
+	}
+	class "<font color=blue>func</font>(c *comms.UDPCommunication, wg *sync.WaitGroup, shutdown <font color=blue>chan</font> <font color=blue>struct</font>{}) " as peers.funcccommsUDPCommunicationwgsyncWaitGroupshutdownchanstruct {
+	}
+	"peers.funcccommsUDPCommunicationwgsyncWaitGroupshutdownchanstruct" #.. "PeerRoutine"
+	
+}
+
+namespace registry {
+	class registry.RegistryGlobal << (G,Green) >> {
+		+ LOCATION_REQUEST 
+		+ TEAM_NAME_REQUEST 
+		+ CODE_REQUEST 
+		+ RECEIVE_REQUEST 
+		+ REPORT_REQUEST 
+		+ CLOSE_REQUEST 
+	
+		+ RegistryHandlerRoutine(c *comms.TCPCommunication) error
+		+ LocationHandler(c *comms.TCPCommunication) error
+		+ TeamNameHandler(c *comms.TCPCommunication) error
+		+ CodeHandler(c *comms.TCPCommunication) error
+		+ ReceiveHandler(c *comms.TCPCommunication) error
+		+ ReportHandler(c *comms.TCPCommunication) error
+		+ CloseHandler(c *comms.TCPCommunication) error
+	}
+	registry.RegistryGlobal --> comms.TCPCommunication
+	class registry.RegistryRequestHandler << (T, #FF7700) >> {
+	}
+	class "<font color=blue>func</font>(*comms.TCPCommunication) error " as registry.funccommsTCPCommunicationerror {
+	}
+	"registry.funccommsTCPCommunicationerror" #.. "RegistryRequestHandler"
+	
+}
+
+namespace comms {
+	class comms.CommsGlobal << (G,Green) >> {
+		+ DEFAULT_TIMEOUT time.Duration
+		+ TCP4 
+		+ MAX_PACKET_SIZE 
+		+ UDP4 
+	
+		+ IsValidIPv4(hostport string) bool
+		+ ConnectTCP(address string) (*TCPCommunication, error)
+		+ ListenUDP(address string) (*UDPCommunication, error)
+	}
+	class comms.TCPCommunication << (S,Aquamarine) >> {
+		- reader *bufio.Reader
+	
+		+ Conn *net.TCPConn
+	
+		+ Close() error
+		+ ReadLine() (string, error)
+		+ Write(data []byte) error
+	}
+	class comms.Packet << (S,Aquamarine) >> {
+		+ Data []byte
+		+ Address string
+	}
+	class comms.UDPCommunication << (S,Aquamarine) >> {
+		+ Conn *net.UDPConn
+	
+		+ ReadFrom() (*Packet, error)
+		+ WriteTo(data []byte, address string) error
+		+ Close() error
+	}
+	
+}
+
+namespace main {
+	class main.MainGlobal << (G,Green) >> {
+		+ CSX3_IPV4 
+	
+		- registryStep() error
+		- main()
+	}
+	
+}
+@enduml
