@@ -1,6 +1,6 @@
 # GlobalPUML
 
-This is a PUML generator for Go. This treats package global as an object to allow an object oriented representation of Go code. For example, if you have a package named "mypackage" that contains non-struct variables and functions, these will be placed into a "MypackageGlobal" object.
+This is a PUML generator for Go, and is being used for a class project. This will most likely not be maintained. This treats package global as an object to allow an object oriented representation of Go code. For example, if you have a package named "mypackage" that contains non-struct variables and functions, these will be placed into a "MypackageGlobal" object.
 
 Namespace idea and function types were taken from https://github.com/jfeliu007/goplantuml.
 
